@@ -30,9 +30,9 @@ The problem is to reduce the cost due to unnecessary repairs. So it is required 
     5. Terraform
 
 # Project Structure Understanding
-Step 1 : Data Ingestion
-Step 2 : Data Validation
-Step 3 : Model Trianing
-Step 4 : Model Evaluation
-Step 5 : Model Pusher 
-Step 6 : Deployment
+    Step 1 : Data Ingestion
+    Step 2 : Data Validation
+    Step 3 : Model Trianing
+    Step 4 : Model Evaluation
+    Step 5 : Model Pusher 
+    Step 6 : Deployment
