@@ -1,6 +1,12 @@
 pymongo[srv]==4.2.0  
 from_root
-pandas
-numpy
 scikit-learn
+PyYAML
+scipy
+dill
+imblearn==0.0
+xgboost
+fastapi
+uvicorn
+python-multipart
 -e .

@@ -3,6 +3,8 @@ from sensor.logger import logging
 from sensor.entity.config_entity import DataIngestionConfig
 from sensor.entity.artifact_entity import DataIngestionArtifact
 from sensor.data_access.sensor_data import SensorData
+from sensor.constant.training_pipeline import SCHEMA_DROP_COLUMN, SCHEMA_FILE_PATH
+from sensor.utils.main_utils import read_yaml
 import sys, os
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -55,7 +57,7 @@ class DataIngestion:
             )
 
             test_set.to_csv(
-                self.data_ingestion_config.testing_file_path, index=False, header=False
+                self.data_ingestion_config.testing_file_path, index=False, header=True
             )
 
             logging.info("Exported train and test file path")
@@ -66,6 +68,9 @@ class DataIngestion:
     def initiate_data_ingestion(self)->DataIngestionArtifact:
         try:
             dataframe = self.export_data_into_feature_store()
+            _schema_config = read_yaml(file_path=SCHEMA_FILE_PATH)
+            dataframe = dataframe.drop(_schema_config[SCHEMA_DROP_COLUMN], axis=1)
+            logging.info("Got Data From the MongoDb")   
             self.split_data_as_train_test(dataframe=dataframe)
             data_ingestion_artifact = DataIngestionArtifact(trained_file_path=self.data_ingestion_config.training_file_path,
                                    test_file_path=self.data_ingestion_config.testing_file_path)
