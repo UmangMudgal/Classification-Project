@@ -14,11 +14,14 @@ from sensor.components.data_transformation import DataTransformation
 from sensor.components.model_trainer import ModelTrainer
 from sensor.components.model_evaluation import ModelEvaluation
 from sensor.components.model_pusher import ModelPusher
+from sensor.constant.training_pipeline import TRAINING_BUCKET_NAME, SAVED_MODEL_DIR
+from sensor.cloud_storage.s3_syncer import S3Sync
 class TrainPipeline:
     is_pipeline_running = False
     def __init__(self) :
         self.training_pipeline_config = TrainingPipelineConfig()
         self.data_ingestion_config = DataIngestionConfig(self.training_pipeline_config)
+        self.s3_sync = S3Sync()
 
     def start_data_ingestion(self)-> DataIngestionArtifact:
         try:
@@ -78,6 +81,7 @@ class TrainPipeline:
             raise CustomException(e,sys)
     
     def start_model_pusher(self, model_evaluation_artifact:ModelEvaluationArtifact):
+        
         try:
             model_pusher_config = ModelPusherConfig(self.training_pipeline_config)
             model_pusher = ModelPusher(model_evaluation_artifact=model_evaluation_artifact, model_pusher_config=model_pusher_config)
@@ -85,6 +89,28 @@ class TrainPipeline:
             return model_pusher_artifact
         except Exception as e:
             raise CustomException(e,sys)
+    
+    def sync_artifact_dir_to_s3(self):
+        """
+        Description: This will sync artifact folder to s3 bucket
+        """
+        try:
+            aws_bucket_url = f"s3://{TRAINING_BUCKET_NAME}/artifact/{self.training_pipeline_config.timestamp}"
+            self.s3_sync.sync_folder_to_s3(folder=self.training_pipeline_config.artifact_dir,
+                                           aws_bucket_url=aws_bucket_url)
+        except Exception as e:
+            raise CustomException(e, sys)
+        
+    def sync_saved_model_dir_to_s3(self):
+        """
+        Description: This will sync saved model folder to s3 bucket
+        """
+        try:
+            aws_bucket_url = f"s3://{TRAINING_BUCKET_NAME}/{SAVED_MODEL_DIR}"
+            self.s3_sync.sync_folder_to_s3(folder=SAVED_MODEL_DIR,
+                                           aws_bucket_url=aws_bucket_url)
+        except Exception as e:
+            raise CustomException(e, sys)
     
     def run_pipeline(self):
         try:
@@ -104,6 +130,8 @@ class TrainPipeline:
             logging.info("Model Pusher Started")
             model_pusher_artifact: ModelPusherArtifact = self.start_model_pusher(model_evaluation_artifact=model_evaluation_artifact)
             TrainPipeline.is_pipeline_running = False
+            self.sync_artifact_dir_to_s3()
+            self.sync_saved_model_dir_to_s3()
         except Exception as e:
             TrainPipeline.is_pipeline_running = False
             raise CustomException(e,sys)
